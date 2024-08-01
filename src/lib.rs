@@ -15,6 +15,8 @@ pub mod prelude {
     use std::fs;
     
     use std::option::Option;
+
+    use std::collections::HashMap;
     
     #[derive(Component)]
     pub struct BellaInstance {
@@ -26,7 +28,7 @@ pub mod prelude {
         root: Entity,
         scene: vello::Scene,
         get_type: BellaType,
-        internal_update: bool,
+        kurbo_affine_transform: Affine,
     }
 
     #[derive(Bundle)]
@@ -281,18 +283,10 @@ pub mod prelude {
             t.scale.y = 3.0;
         }
     }
-    
-    pub fn draw_impl(
-        mut bella_shape_query: Query<(&mut BellaShape, &GlobalTransform)>,
-        mut vello_scene_query: Query<&mut VelloScene>) {
 
-        for mut v in &mut vello_scene_query {
-            *v = VelloScene::default();
-        }
-    
+    pub fn transform_impl(mut bella_shape_query: Query<(&mut BellaShape, &GlobalTransform), Changed<GlobalTransform>>) {
+
         for (mut s, gt) in &mut bella_shape_query {
-
-            let mut scene = vello_scene_query.get_mut(s.root).unwrap();
 
             let gt_matrix = gt.affine().matrix3;
             let gt_translation: Vec3 = gt.affine().translation.into();
@@ -303,72 +297,87 @@ pub mod prelude {
 
             let position_point = kurbo::Point { x: gt_translation.x as f64, y: gt_translation.y as f64 };
 
-            let kurbo_affine_transform = Affine::new([gt_x[0] as f64, gt_x[1] as f64, gt_y[0] as f64, gt_y[1] as f64, 0.0, 0.0])
+            s.kurbo_affine_transform = Affine::new([gt_x[0] as f64, gt_x[1] as f64, gt_y[0] as f64, gt_y[1] as f64, 0.0, 0.0])
                 .then_translate(position_point.to_vec2());
-            
-            if s.internal_update {
-                match &s.get_type {
-                    BellaType::Line { stroke, begin, end, color } => {
+        }
+    }
     
-                        let get_stroke = stroke.clone();
-                
-                        let begin_tuple: (f64, f64) = (begin.x as f64, begin.y as f64);
-                        let end_tuple: (f64, f64) = (end.x as f64, end.y as f64);
-        
-                        let line = Line::new(begin_tuple, end_tuple);
-            
-                        let linear_bevy_color: bevy::color::LinearRgba = (*color).into();
-                        
-                        let line_stroke_color = peniko::Color::rgba(
-                            linear_bevy_color.red as f64,
-                            linear_bevy_color.green as f64,
-                            linear_bevy_color.blue as f64,
-                            linear_bevy_color.alpha as f64);
-    
-                        s.scene.reset();
-            
-                        s.scene.stroke(&get_stroke, Affine::IDENTITY, line_stroke_color, None, &line);
-                    },
-                    BellaType::Rect { stroke, color, fill_color, size, radius } => {
-    
-                        let get_stroke = stroke.clone();
-    
-                        let begin_tuple: (f64, f64) = (-(size.x / 2.0) as f64, -(size.y / 2.0) as f64);
-                        let end_tuple: (f64, f64) = ((size.x / 2.0) as f64, (size.y / 2.0) as f64);
-        
-                        let rect = kurbo::Rect::new(begin_tuple.0, begin_tuple.1, end_tuple.0, end_tuple.1);
-                        let radii = kurbo::RoundedRectRadii::new(radius.x as f64, radius.y as f64, radius.z as f64, radius.w as f64);
-                        let final_rect = kurbo::RoundedRect::from_rect(rect, radii);
-            
-                        let linear_bevy_color: bevy::color::LinearRgba = (*color).into();
-                        let linear_bevy_fill_color: bevy::color::LinearRgba = (*fill_color).into();
-            
-                        let line_stroke_color = peniko::Color::rgba(
-                            linear_bevy_color.red as f64,
-                            linear_bevy_color.green as f64,
-                            linear_bevy_color.blue as f64,
-                            linear_bevy_color.alpha as f64);
-    
-                        let fill_color = peniko::Color::rgba(
-                            linear_bevy_fill_color.red as f64,
-                            linear_bevy_fill_color.green as f64,
-                            linear_bevy_fill_color.blue as f64,
-                            linear_bevy_fill_color.alpha as f64);
-    
-                        s.scene.reset();
-                        
-                        s.scene.fill(Fill::NonZero, Affine::IDENTITY, fill_color, None, &final_rect);
-                        s.scene.stroke(&get_stroke, Affine::IDENTITY, line_stroke_color, None, &final_rect);
-                    },
-                    BellaType::SubScene { .. } => {}
-                }
+    pub fn draw_impl(
+        mut bella_shape_query: Query<&mut BellaShape, (With<GlobalTransform>, Changed<BellaShape>)>,
+        mut vello_scene_query: Query<&mut VelloScene>) {
 
-                s.internal_update = false;
+        let mut reset_vello_scenes: HashMap<Entity, bool> = HashMap::new();
+    
+        for mut s in &mut bella_shape_query {
+
+            let mut scene = vello_scene_query.get_mut(s.root).unwrap();
+
+            let is_reset: &mut bool = reset_vello_scenes.entry(s.root).or_insert(false);
+
+            if *is_reset != true {
+                *scene = VelloScene::default();
+                *is_reset = true;
             }
 
             match &s.get_type {
-                BellaType::SubScene { data, .. } => scene.append(data, Some(kurbo_affine_transform)),
-                _ => scene.append(&s.scene, Some(kurbo_affine_transform)),
+                BellaType::Line { stroke, begin, end, color } => {
+    
+                    let get_stroke = stroke.clone();
+            
+                    let begin_tuple: (f64, f64) = (begin.x as f64, begin.y as f64);
+                    let end_tuple: (f64, f64) = (end.x as f64, end.y as f64);
+        
+                    let line = Line::new(begin_tuple, end_tuple);
+            
+                    let linear_bevy_color: bevy::color::LinearRgba = (*color).into();
+                    
+                    let line_stroke_color = peniko::Color::rgba(
+                        linear_bevy_color.red as f64,
+                        linear_bevy_color.green as f64,
+                        linear_bevy_color.blue as f64,
+                        linear_bevy_color.alpha as f64);
+    
+                    s.scene.reset();
+            
+                    s.scene.stroke(&get_stroke, Affine::IDENTITY, line_stroke_color, None, &line);
+                },
+                BellaType::Rect { stroke, color, fill_color, size, radius } => {
+    
+                    let get_stroke = stroke.clone();
+    
+                    let begin_tuple: (f64, f64) = (-(size.x / 2.0) as f64, -(size.y / 2.0) as f64);
+                    let end_tuple: (f64, f64) = ((size.x / 2.0) as f64, (size.y / 2.0) as f64);
+        
+                    let rect = kurbo::Rect::new(begin_tuple.0, begin_tuple.1, end_tuple.0, end_tuple.1);
+                    let radii = kurbo::RoundedRectRadii::new(radius.x as f64, radius.y as f64, radius.z as f64, radius.w as f64);
+                    let final_rect = kurbo::RoundedRect::from_rect(rect, radii);
+            
+                    let linear_bevy_color: bevy::color::LinearRgba = (*color).into();
+                    let linear_bevy_fill_color: bevy::color::LinearRgba = (*fill_color).into();
+            
+                    let line_stroke_color = peniko::Color::rgba(
+                        linear_bevy_color.red as f64,
+                        linear_bevy_color.green as f64,
+                        linear_bevy_color.blue as f64,
+                        linear_bevy_color.alpha as f64);
+    
+                    let fill_color = peniko::Color::rgba(
+                        linear_bevy_fill_color.red as f64,
+                        linear_bevy_fill_color.green as f64,
+                        linear_bevy_fill_color.blue as f64,
+                        linear_bevy_fill_color.alpha as f64);
+    
+                    s.scene.reset();
+                    
+                    s.scene.fill(Fill::NonZero, Affine::IDENTITY, fill_color, None, &final_rect);
+                    s.scene.stroke(&get_stroke, Affine::IDENTITY, line_stroke_color, None, &final_rect);
+                },
+                BellaType::SubScene { .. } => {}
+            }
+
+            match &s.get_type {
+                BellaType::SubScene { data, .. } => scene.append(data, Some(s.kurbo_affine_transform)),
+                _ => scene.append(&s.scene, Some(s.kurbo_affine_transform)),
             }
         }
     }
@@ -392,7 +401,7 @@ pub mod prelude {
                     root: self.vello_root.unwrap(),
                     scene: vello::Scene::new(),
                     get_type: bt,
-                    internal_update: true,
+                    kurbo_affine_transform: Affine::scale(1.0),
                 },
                 transform: TransformBundle::from_transform(tr),
             }
@@ -405,6 +414,7 @@ pub mod prelude {
         fn build(&self, app: &mut App) {
             app
                 .add_plugins(VelloPlugin)
+                .add_systems(Update, transform_impl)
                 .add_systems(Update, draw_impl);
         }
     }
