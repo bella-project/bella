@@ -1,0 +1,9 @@
+[package]
+name = "bella"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14.0"
+bevy_vello = "0.5.1"
+vello_svg = "0.3.1"
