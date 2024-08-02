@@ -3,8 +3,10 @@
 
 <div align="center">
 
-# Bevy + Vello
+# A library for rendering GPU-powered Vector Graphics in Bevy with the power of Vello.
 
 Bella is a library for the **Bevy** game engine that allows you to control **Vello** without having to leave Bevy's ECS system.
 
 </div>
+
+*-WIP-*
