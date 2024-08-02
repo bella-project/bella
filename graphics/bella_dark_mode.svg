@@ -1,0 +1,106 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0px" y="0px" width="1121px" height="1054px" viewBox="0 0 1121 1054">
+<defs>
+<linearGradient id="Gradient_1" gradientUnits="userSpaceOnUse" x1="0" y1="562.95" x2="1121.2" y2="562.95" spreadMethod="pad">
+<stop  offset="0%" stop-color="#FF0000"/>
+
+<stop  offset="100%" stop-color="#FFBC00"/>
+</linearGradient>
+
+<g id="S_mbolo_2_0_Layer1_0_FILL">
+<path fill="url(#Gradient_1)" stroke="none" d="
+M 658.8 681.4
+L 659.45 678.9
+Q 766.3 705.45 881.85 656.65 1258.95 471.05 1041.95 71.25 868.3 327.1 613.9 491.9
+L 594.15 390.95
+Q 689.25 394.9 707.85 336 626 302.5 517.15 344.9 461.25 364.35 404.25 342.2 445.6 381.05 530.1 385.9
+L 515.85 497.4
+Q 255.8 331.35 79.25 71.25 2.189453125 213.226171875 0.05 328.2 -0.072265625 334.768359375 0.05 341.25 3.81640625 540.72578125 239.35 656.65 354.95 705.45 461.75 678.9
+L 462.4 681.4 512.95 741 451.1 846.3 510.3 818.8 482.05 915.4 523 872.8 560.65 1054.65 598.2 872.8 639.15 915.4 610.9 818.8 670.05 846.3 608.25 741 658.8 681.4
+M 650.75 337.5
+Q 637.1 353 610 338.3 632.15 327.3 650.75 337.5 Z"/>
+</g>
+
+<style>
+  @font-face {
+    font-family: "Abril_Fatface_Regular";
+    src: url(./AbrilFatface-Regular.ttf);
+  }
+</style>
+
+<font horiz-adv-x="2048">
+<!--  Nombre de fuente: Abril Fatface
+Identificación del proveedor: TT  
+Copyright (c) 2011, Copyright (c) 2011, TypeTogether (www.type-together.com), with Reserved Font Names "Abril" and "Abril Fatface"
+http://scripts.sil.org/OFL
+URL for more Information: http://www.adobe.com/go/font_vendor_id?ID=TT&Name=Abril%20Fatface&PSName=AbrilFatface-Regular&applanguage=es_ES-->
+<font-face font-family="Abril_Fatface_Regular" units-per-em="2048" ascent="2167" descent="596"/>
+
+<glyph unicode="B" horiz-adv-x="1350" d="
+M 575 725
+L 575 39 672 39
+Q 784 39 829 117 875 195 875 346
+L 875 455
+Q 875 590 819 657 764 725 623 725
+L 575 725 Z
+M 43 1434
+L 655 1434
+Q 940 1434 1082 1357 1225 1280 1225 1098 1225 817 887 762
+L 887 758
+Q 1296 707 1296 401 1296 178 1128 89 961 0 645 0
+L 43 0 43 39 176 39 176 1395 43 1395 43 1434 Z
+M 575 1395
+L 575 764 629 764
+Q 735 764 777 828 819 893 819 1026
+L 819 1122
+Q 819 1274 782 1334 745 1395 641 1395
+L 575 1395 Z"/>
+
+<glyph unicode="e" horiz-adv-x="1057" d="
+M 559 -20
+Q 295 -20 163 116 31 252 31 495 31 737 179 866 328 995 557 995 1022 995 1004 528
+L 426 528 426 449
+Q 426 248 477 145 528 43 655 43 893 43 967 297
+L 1004 291
+Q 965 143 863 61 762 -20 559 -20 Z
+M 428 569
+L 639 569 639 670
+Q 639 836 620 896 600 956 542 956 483 956 456 892 428 827 428 670
+L 428 569 Z"/>
+
+<glyph unicode="l" horiz-adv-x="647" d="
+M 12 1536
+L 514 1536 514 37 629 37 629 0 20 0 20 37 133 37 133 1499 12 1499 12 1536 Z"/>
+
+<glyph unicode="a" horiz-adv-x="1124" d="
+M 512 481
+L 571 481 571 639
+Q 571 834 550 900 528 967 467 967 430 967 400 947 371 928 371 894 371 860 383 825
+L 434 825
+Q 451 782 451 722 451 661 399 617 348 573 270 573 94 573 94 743 94 995 522 995 766 995 859 912 952 829 952 608
+L 952 193
+Q 952 86 1012 86 1081 86 1094 297
+L 1124 295
+Q 1116 115 1057 47 997 -20 862 -20 616 -20 580 131 553 53 500 16 446 -20 344 -20 41 -20 41 227 41 373 157 427 272 481 512 481 Z
+M 430 229
+Q 430 123 441 92 453 61 484 61 516 61 544 114 571 166 571 258
+L 571 449 557 449
+Q 430 449 430 262
+L 430 229 Z"/>
+</font>
+</defs>
+
+<g transform="matrix( 1, 0, 0, 1, 0,0) ">
+<g transform="matrix( 1, 0, 0, 1, 0,0) ">
+<use xlink:href="#S_mbolo_2_0_Layer1_0_FILL"/>
+</g>
+
+<g transform="matrix( 2.373748779296875, 0, 0, 2.373748779296875, 295.1,4.75) ">
+<clipPath id="Mask_Mask_1">
+<rect x="-2" y="-2" width="230.75" height="133.5" fill="#FFFFFF" stroke="none"/>
+</clipPath>
+
+<text clip-path="url(#Mask_Mask_1)" writing-mode="lr"><tspan x="0" y="101.55" baseline-shift="0%" kerning="auto" font-family="Abril_Fatface_Regular" font-size="96" fill="#FF5F00" xml:space="preserve">Bella</tspan></text>
+</g>
+</g>
+</svg>
