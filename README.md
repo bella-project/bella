@@ -1,2 +1,2 @@
-![Bella Logo](./graphics/bella_light_mode.svg#gh-light-mode-only)
-![Bella Logo](./graphics/bella_dark_mode.svg#gh-dark-mode-only)
+![Bella Logo](./graphics/logo/bella_light_mode.png#gh-light-mode-only)
+![Bella Logo](./graphics/logo/bella_dark_mode.png#gh-dark-mode-only)
