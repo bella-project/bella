@@ -28,12 +28,15 @@ pub mod prelude {
         root: Entity,
         scene: vello::Scene,
         get_type: BellaType,
-        kurbo_affine_transform: Affine,
     }
+
+    #[derive(Component)]
+    pub struct BellaKurboTransform(Affine);
 
     #[derive(Bundle)]
     pub struct BellaBundle {
         shape: BellaShape,
+        bkt: BellaKurboTransform,
         transform: TransformBundle,
     }
     
@@ -82,13 +85,26 @@ pub mod prelude {
             },
             BellaExportOptions::ScaleToUnitKeepAspect(u) => {
 
-                let aspect_ratio: f32 = get_size.x / get_size.y;
+                if get_size.x >= get_size.y {
 
-                let scale_x = (u / get_size.x) * aspect_ratio;
-                let scale_down = scale_x - (u / get_size.x);
+                    let aspect_ratio: f32 = get_size.x / get_size.y;
 
-                scale_vec.x = (scale_x - scale_down) * 2.0;
-                scale_vec.y = ((u / get_size.y) - scale_down) * 2.0;
+                    let scale_x = (u / get_size.x) * aspect_ratio;
+                    let scale_down = scale_x - (u / get_size.x);
+    
+                    scale_vec.x = (scale_x - scale_down) * 2.0;
+                    scale_vec.y = ((u / get_size.y) - scale_down) * 2.0;
+                }
+                else {
+
+                    let aspect_ratio: f32 = get_size.y / get_size.x;
+
+                    let scale_y = (u / get_size.y) * aspect_ratio;
+                    let scale_down = scale_y - (u / get_size.y);
+
+                    scale_vec.x = ((u / get_size.x) - scale_down) * 2.0;
+                    scale_vec.y = (scale_y - scale_down) * 2.0;
+                }
             },
             _ => {}
         }
@@ -284,9 +300,9 @@ pub mod prelude {
         }
     }
 
-    pub fn transform_impl(mut bella_shape_query: Query<(&mut BellaShape, &GlobalTransform), Changed<GlobalTransform>>) {
+    pub fn transform_impl(mut bella_shape_query: Query<(&mut BellaShape, &mut BellaKurboTransform, &GlobalTransform), Changed<GlobalTransform>>) {
 
-        for (mut s, gt) in &mut bella_shape_query {
+        for (mut s, mut bkt, gt) in &mut bella_shape_query {
 
             let gt_matrix = gt.affine().matrix3;
             let gt_translation: Vec3 = gt.affine().translation.into();
@@ -297,7 +313,7 @@ pub mod prelude {
 
             let position_point = kurbo::Point { x: gt_translation.x as f64, y: gt_translation.y as f64 };
 
-            s.kurbo_affine_transform = Affine::new([gt_x[0] as f64, gt_x[1] as f64, gt_y[0] as f64, gt_y[1] as f64, 0.0, 0.0])
+            bkt.0 = Affine::new([gt_x[0] as f64, gt_x[1] as f64, gt_y[0] as f64, gt_y[1] as f64, 0.0, 0.0])
                 .then_translate(position_point.to_vec2());
         }
     }
@@ -305,19 +321,8 @@ pub mod prelude {
     pub fn draw_impl(
         mut bella_shape_query: Query<&mut BellaShape, (With<GlobalTransform>, Changed<BellaShape>)>,
         mut vello_scene_query: Query<&mut VelloScene>) {
-
-        let mut reset_vello_scenes: HashMap<Entity, bool> = HashMap::new();
     
-        for mut s in &mut bella_shape_query {
-
-            let mut scene = vello_scene_query.get_mut(s.root).unwrap();
-
-            let is_reset: &mut bool = reset_vello_scenes.entry(s.root).or_insert(false);
-
-            if *is_reset != true {
-                *scene = VelloScene::default();
-                *is_reset = true;
-            }
+        for (mut s) in &mut bella_shape_query {
 
             match &s.get_type {
                 BellaType::Line { stroke, begin, end, color } => {
@@ -374,10 +379,29 @@ pub mod prelude {
                 },
                 BellaType::SubScene { .. } => {}
             }
+        }
+    }
+
+    pub fn finish_impl(
+        mut bella_shape_query: Query<(&mut BellaShape, &mut BellaKurboTransform, &GlobalTransform), Changed<GlobalTransform>>,
+        mut vello_scene_query: Query<&mut VelloScene>) {
+
+        let mut reset_vello_scenes: HashMap<Entity, bool> = HashMap::new();
+
+        for (mut s, mut bkt, gt) in &mut bella_shape_query {
+
+            let mut scene = vello_scene_query.get_mut(s.root).unwrap();
+
+            let is_reset: &mut bool = reset_vello_scenes.entry(s.root).or_insert(false);
+
+            if *is_reset != true {
+                *scene = VelloScene::default();
+                *is_reset = true;
+            }
 
             match &s.get_type {
-                BellaType::SubScene { data, .. } => scene.append(data, Some(s.kurbo_affine_transform)),
-                _ => scene.append(&s.scene, Some(s.kurbo_affine_transform)),
+                BellaType::SubScene { data, .. } => scene.append(data, Some(bkt.0)),
+                _ => scene.append(&s.scene, Some(bkt.0)),
             }
         }
     }
@@ -401,8 +425,8 @@ pub mod prelude {
                     root: self.vello_root.unwrap(),
                     scene: vello::Scene::new(),
                     get_type: bt,
-                    kurbo_affine_transform: Affine::scale(1.0),
                 },
+                bkt: BellaKurboTransform(Affine::scale(1.0)),
                 transform: TransformBundle::from_transform(tr),
             }
         }
@@ -415,7 +439,8 @@ pub mod prelude {
             app
                 .add_plugins(VelloPlugin)
                 .add_systems(Update, transform_impl)
-                .add_systems(Update, draw_impl);
+                .add_systems(Update, draw_impl.after(transform_impl))
+                .add_systems(Update, finish_impl.after(draw_impl));
         }
     }
 }
