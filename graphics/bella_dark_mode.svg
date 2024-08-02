@@ -24,7 +24,7 @@ Q 637.1 353 610 338.3 632.15 327.3 650.75 337.5 Z"/>
 <style>
   @font-face {
     font-family: "Abril_Fatface_Regular";
-    src: url(./AbrilFatface-Regular.ttf);
+    src: url(./graphics/AbrilFatface-Regular.ttf);
   }
 </style>
 
