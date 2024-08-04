@@ -13,16 +13,20 @@ Bella is a library for the **Bevy** game engine that allows you to control **Vel
 
 <table align="center">
   <tr>
-    <td>This code spawns a line!</td>
+    <td>This code spawns a tiny line!</td>
   </tr>
 <tr>
 <td>
 
 ```rs
-// First, create a Bella Instance.
+// First, make sure to create a 2d camera.
+let mut camera = Camera2dBundle::default();
+commands.spawn(camera);
+
+// Then, create a Bella Instance.
 let bella_instance = BellaInstance::new(&mut commands);
 
-// Then, create a line.
+// Finally, create a line inside of the instance.
 commands.spawn(bella_instance.shape(bella_line(), Transform::default()));
 ```
     
@@ -31,7 +35,64 @@ commands.spawn(bella_instance.shape(bella_line(), Transform::default()));
 <tr>
 <td>
 
-![Bella Line](https://github.com/user-attachments/assets/123c6eed-8626-4207-bcbf-f85be4d71ac0)
+![Bella Tiny Line](https://github.com/user-attachments/assets/268aafba-f6a8-4cb8-8cfd-fe833beecbec)
+
+</td>
+</tr>
+</table>
+
+<table align="center">
+  <tr>
+    <td>This line is too tiny... Let's make it bigger!</td>
+  </tr>
+<tr>
+<td>
+
+```rs
+
+// Every line has a beginning point and an end point.
+commands.spawn(bella_instance.shape(
+    bella_line()
+        .with_begin(Vec2::new(-100.0, -100.0))
+        .with_end(Vec2::new(100.0, 100.0)),
+    Transform::default()
+));
+```
+    
+</td>
+</tr>
+<tr>
+<td>
+
+![Bella Line](https://github.com/user-attachments/assets/0d7316aa-abe9-4112-ae1d-7c24ac45e4a6)
+
+</td>
+</tr>
+</table>
+
+<table align="center">
+  <tr>
+    <td>And make the line's stroke bigger!</td>
+  </tr>
+<tr>
+<td>
+
+```rs
+commands.spawn(bella_instance.shape(
+    bella_line()
+        .with_stroke(BellaStroke::new(10.0))
+        .with_begin(Vec2::new(-100.0, -100.0))
+        .with_end(Vec2::new(100.0, 100.0)),
+    Transform::default()
+));
+```
+    
+</td>
+</tr>
+<tr>
+<td>
+
+![Bella Line but Bigger](https://github.com/user-attachments/assets/1eab19fe-ebf9-4768-867e-d20504ff1f3f)
 
 </td>
 </tr>
