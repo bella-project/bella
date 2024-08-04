@@ -9,7 +9,7 @@ Bella is a library for the **Bevy** game engine that allows you to control **Vel
 
 </div>
 
-# It's extremely easy!
+# Easy to use!
 
 <table align="center">
   <tr>
