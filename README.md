@@ -94,4 +94,15 @@ commands.spawn(bella_instance.shape(
 </tr>
 </table>
 
+**Tada!** A custom line in Bella!
+
+# How to add Bella to your Bevy project.
+
+- Since this is not a Cargo crate (yet), first, you'll have to clone this repository: `git clone https://github.com/bella-project/bella`.
+
+  > [!WARNING]  
+  > Make sure to clone the repository outside of your Bevy project.
+  
+- One that's done, add Bella in your Cargo.toml, by setting the path where you cloned
+
 *-WIP-*
