@@ -19,14 +19,10 @@ Bella is a library for the **Bevy** game engine that allows you to control **Vel
 <td>
 
 ```rs
-// First, make sure to create a 2d camera.
-let mut camera = Camera2dBundle::default();
-commands.spawn(camera);
-
-// Then, create a Bella Instance.
+// First, create a Bella Instance.
 let bella_instance = BellaInstance::new(&mut commands);
 
-// Finally, create a line inside of the instance.
+// Then, create a line inside of the instance.
 commands.spawn(bella_instance.shape(bella_line(), Transform::default()));
 ```
     
