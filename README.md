@@ -28,7 +28,7 @@ commands.spawn(bella_instance.shape(bella_line(), Transform::default()));
 ```
     
 </td>
-<td>
+<td style="width: 400px; height: 400px">
 
 ![Bella Line](https://github.com/user-attachments/assets/a7e99806-45d9-41e5-aac8-5bbf30e5ffc3)
 
