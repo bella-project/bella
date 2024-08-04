@@ -541,12 +541,12 @@ pub mod prelude {
                     let get_text = text.clone();
                     let get_font = font.clone();
 
+                    let get_font_size = font_size.clone();
+
                     let font_ref = to_font_ref(&get_font).unwrap();
-                    //let brush = brush.into();
-                    //let style = style.into();
                     let axes = font_ref.axes();
                     let charmap = font_ref.charmap();
-                    let final_font_size = vello::skrifa::instance::Size::new(*font_size);
+                    let final_font_size = vello::skrifa::instance::Size::new(get_font_size);
                     let variations: &[(&str, f32)] = &[];
                     let var_loc = axes.location(variations.iter().copied());
                     let metrics = font_ref.metrics(final_font_size, &var_loc);
@@ -555,17 +555,7 @@ pub mod prelude {
                     let mut pen_x = 0f32;
                     let mut pen_y = 0f32;
 
-                    s.scene
-                        .draw_glyphs(&get_font)
-                        .font_size(2.0)
-                        .transform(Affine::IDENTITY)
-                        .glyph_transform(None)
-                        .normalized_coords(var_loc.coords())
-                        .brush(&get_style.stroke_brush.to_peniko_brush())
-                        .hint(false)
-                        .draw(
-                            &peniko::Style::Stroke(get_style.stroke),
-                            get_text.chars().filter_map(|ch| {
+                    let gly: Vec<Glyph> = get_text.chars().filter_map(|ch| {
                             if ch == '\n' {
                                 pen_y += line_height;
                                 pen_x = 0.0;
@@ -580,7 +570,27 @@ pub mod prelude {
                                 x,
                                 y: pen_y,
                             })
-                        }));
+                        }).collect();
+
+                    s.scene
+                        .draw_glyphs(&get_font)
+                        .font_size(get_font_size)
+                        .transform(Affine::IDENTITY)
+                        .glyph_transform(None)
+                        .normalized_coords(var_loc.coords())
+                        .brush(&get_style.stroke_brush.to_peniko_brush())
+                        .hint(false)
+                        .draw(&peniko::Style::Stroke(get_style.stroke), gly.clone().into_iter());
+
+                    s.scene
+                        .draw_glyphs(&get_font)
+                        .font_size(get_font_size)
+                        .transform(Affine::IDENTITY)
+                        .glyph_transform(None)
+                        .normalized_coords(var_loc.coords())
+                        .brush(&get_style.fill_brush.to_peniko_brush())
+                        .hint(false)
+                        .draw(&peniko::Style::Fill(Fill::NonZero), gly.clone().into_iter());
                 },
                 BellaType::SubScene { .. } => {}
             }
