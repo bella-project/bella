@@ -100,9 +100,21 @@ commands.spawn(bella_instance.shape(
 
 - Since this is not a Cargo crate (yet), first, you'll have to clone this repository: `git clone https://github.com/bella-project/bella`.
 
-  > [!WARNING]  
-  > Make sure to clone the repository outside of your Bevy project.
+> [!WARNING]  
+> Make sure to clone the repository outside of your Bevy project.
   
-- One that's done, add Bella in your Cargo.toml, by setting the path where you cloned
+- One that's done, add Bella in your Cargo.toml, by setting the path where you cloned the repo.
+
+```toml
+# ...
+
+[dependencies]
+bevy = "0.14.1"
+bella = { path = "path/to/bella" }
+
+# ...
+```
+
+- Done! You added Bella! Now you can compile and run your project!
 
 *-WIP-*
