@@ -2,10 +2,10 @@
 
 use crate::prelude::*;
 
+use winit::keyboard::PhysicalKey::Code;
 /// The representation of a key from your keyboard, in form of a struct. Powered by [`winit`].
 pub use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::platform::scancode::PhysicalKeyExtScancode;
-use winit::keyboard::PhysicalKey::Code;
 
 use crossbeam_queue::SegQueue;
 
@@ -57,14 +57,14 @@ pub fn recieve_inputs(mut input: ResMut<BellaInput>) {
 }
 
 fn get_keycode_from_physical_key(pk: PhysicalKey) -> KeyCode {
-	match pk {
-		Code(kc) => kc,
-		_ => panic!("KeyCode not found!"),
-	}
+    match pk {
+        Code(kc) => kc,
+        _ => panic!("KeyCode not found!"),
+    }
 }
 
 impl BellaInput {
-	/// Sends a key down to the `key_down_queue`. Currently used in [`BellaApp::window_main`].
+    /// Sends a key down to the `key_down_queue`. Currently used in [`BellaApp::window_main`].
     pub fn set_key_down(&self, key: u32) {
         self.key_down_queue.push(key);
     }
@@ -82,7 +82,7 @@ impl BellaInput {
             }
         }
 
-        return false;
+        false
     }
 
     /// Checks if a key is up.
@@ -93,7 +93,7 @@ impl BellaInput {
             }
         }
 
-        return false;
+        false
     }
 
     /// Checks if a key is currently being pressed.
@@ -104,6 +104,6 @@ impl BellaInput {
             }
         }
 
-        return false;
+        false
     }
 }

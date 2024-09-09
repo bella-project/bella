@@ -2,11 +2,7 @@
 
 use bevy_ecs::prelude::*;
 
-use vello::peniko::{
-    kurbo::{Affine, Point, Vec2},
-    BlendMode, Blob, Brush, BrushRef, Color, ColorStop, ColorStops, ColorStopsSource, Compose,
-    Extend, Fill, Font, Gradient, Image, Mix, StyleRef,
-};
+use vello::peniko::kurbo::{Affine, Point, Vec2};
 
 /// Describes the position, rotation, scale and any kind of transformation of an entity. This is a translation layer between Bella and [`vello::kurbo`]'s [`Affine`].
 #[derive(Component, Default)]
@@ -15,8 +11,7 @@ pub struct BellaTransform {
 }
 
 impl BellaTransform {
-
-	// Default transform.
+    // Default transform.
     pub const IDENTITY: Self = Self {
         affine: Affine::IDENTITY,
     };

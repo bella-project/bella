@@ -11,7 +11,7 @@ pub struct BellaTime {
 }
 
 impl BellaTime {
-	/// Instantiates the Resource. Currently used in [`BellaApp`]'s creation.
+    /// Instantiates the Resource. Currently used in [`BellaApp`]'s creation.
     pub fn new() -> Self {
         Self {
             delta: Instant::now(),
@@ -25,6 +25,12 @@ impl BellaTime {
 
     /// Gets the Delta Time in seconds.
     pub fn delta_seconds(&self) -> f64 {
-        return self.delta.elapsed().as_secs_f64();
+        self.delta.elapsed().as_secs_f64()
+    }
+}
+
+impl Default for BellaTime {
+    fn default() -> Self {
+        Self::new()
     }
 }

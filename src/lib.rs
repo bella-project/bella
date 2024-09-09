@@ -13,19 +13,12 @@ pub mod transforms;
 pub mod prelude {
 
     use winit::{
-        window::Window,
-        event::{
-            WindowEvent,
-            ElementState,
-        },
-        dpi::PhysicalSize,
-        platform::scancode::PhysicalKeyExtScancode,
         application::ApplicationHandler,
-        event_loop::{
-            EventLoop,
-            ActiveEventLoop,
-            ControlFlow,
-        },
+        dpi::PhysicalSize,
+        event::{ElementState, WindowEvent},
+        event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+        platform::scancode::PhysicalKeyExtScancode,
+        window::Window,
     };
 
     use std::sync::Arc;
@@ -33,11 +26,8 @@ pub mod prelude {
     #[doc(hidden)]
     pub use winit::keyboard::KeyCode;
 
-    use std::time::Duration;
-
     use std::num::NonZeroUsize;
 
-    use vello::kurbo::{Affine, Circle, Ellipse, Line, RoundedRect, Stroke};
     use vello::peniko::Color;
     use vello::util::{RenderContext, RenderSurface};
     use vello::{AaConfig, DebugLayers, Renderer, RendererOptions, Scene};
@@ -47,8 +37,6 @@ pub mod prelude {
     use pollster;
 
     use std::collections::HashMap;
-
-    use crossbeam_queue::ArrayQueue;
 
     #[doc(hidden)]
     pub use vello::{kurbo, peniko};
@@ -65,7 +53,12 @@ pub mod prelude {
     pub use bevy_ecs::prelude::*;
 
     /// Helper function that creates a Winit window and returns it (wrapped in an Arc for sharing between threads)
-    fn create_winit_window(event_loop: &ActiveEventLoop, title: &str, width: u32, height: u32) -> Arc<Window> {
+    fn create_winit_window(
+        event_loop: &ActiveEventLoop,
+        title: &str,
+        width: u32,
+        height: u32,
+    ) -> Arc<Window> {
         let attr = Window::default_attributes()
             .with_inner_size(PhysicalSize::new(width, height))
             .with_resizable(true)
@@ -92,7 +85,7 @@ pub mod prelude {
         surface: RenderSurface<'s>,
         window: Arc<Window>,
     }
-    
+
     enum RenderState<'s> {
         Active(ActiveRenderState<'s>),
         // Cache a window so that it can be reused when the app is resumed after being suspended
@@ -135,7 +128,8 @@ pub mod prelude {
     fn bella_instance_reset(mut root: ResMut<BellaInstance>, mut time: ResMut<BellaTime>) {
         time.start_delta();
 
-        for (id, scene) in &mut root.scenes {
+        #[allow(clippy::for_kv_map)]
+        for (_id, scene) in &mut root.scenes {
             scene.reset();
         }
     }
@@ -147,10 +141,10 @@ pub mod prelude {
             };
 
             // Get the winit window cached in a previous Suspended event or else create a new window
-            let window = cached_window
-                .take()
-                .unwrap_or_else(|| create_winit_window(event_loop, &self.title, self.width, self.height));
-    
+            let window = cached_window.take().unwrap_or_else(|| {
+                create_winit_window(event_loop, &self.title, self.width, self.height)
+            });
+
             // Create a vello Surface
             let size = window.inner_size();
             let surface_future = self.context.create_surface(
@@ -160,20 +154,20 @@ pub mod prelude {
                 wgpu::PresentMode::AutoVsync,
             );
             let surface = pollster::block_on(surface_future).expect("Error creating surface");
-    
+
             // Create a vello Renderer for the surface (using its device id)
             self.renderers
                 .resize_with(self.context.devices.len(), || None);
             self.renderers[surface.dev_id]
                 .get_or_insert_with(|| create_vello_renderer(&self.context, &surface));
-    
+
             // Save the Window and Surface to a state variable
             self.state = RenderState::Active(ActiveRenderState { window, surface });
-    
+
             event_loop.set_control_flow(ControlFlow::Wait);
         }
 
-        fn suspended(&mut self, event_loop: &ActiveEventLoop) {
+        fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
             if let RenderState::Active(state) = &self.state {
                 self.state = RenderState::Suspended(Some(state.window.clone()));
             }
@@ -194,12 +188,11 @@ pub mod prelude {
                 RenderState::Active(state) if state.window.id() == window_id => state,
                 _ => return,
             };
-    
-            match event {
 
+            match event {
                 // Exit the event loop when a close is requested (e.g. window's close button is pressed)
                 WindowEvent::CloseRequested => event_loop.exit(),
-    
+
                 // Resize the surface when the window is resized
                 WindowEvent::Resized(size) => {
                     self.width = size.width;
@@ -207,25 +200,23 @@ pub mod prelude {
 
                     self.is_resizing = true;
                     self.new_resize = true;
-                },
+                }
 
                 WindowEvent::KeyboardInput { event, .. } => {
-
                     let input = self.world.get_resource::<BellaInput>().unwrap();
 
                     match event.state {
                         ElementState::Pressed => {
                             input.set_key_down(event.physical_key.to_scancode().unwrap());
-                        },
+                        }
                         ElementState::Released => {
                             input.set_key_up(event.physical_key.to_scancode().unwrap());
-                        },
+                        }
                     }
-                },
-    
+                }
+
                 // This is where all the rendering happens
                 WindowEvent::RedrawRequested => {
-
                     if self.is_resizing {
                         render_state.window.request_redraw();
                         self.is_resizing = false;
@@ -238,15 +229,14 @@ pub mod prelude {
                     }
 
                     // Get the RenderSurface (surface + config)
-                    let mut surface = &mut render_state.surface;
+                    let surface = &mut render_state.surface;
 
                     let width = self.width;
                     let height = self.height;
 
                     // This is a fix to try to smooth resizing on Windows.
                     if self.new_resize {
-                        self.context
-                            .resize_surface(&mut surface, width, height);
+                        self.context.resize_surface(surface, width, height);
                         self.new_resize = false;
                     }
 
@@ -257,16 +247,17 @@ pub mod prelude {
                     self.sch_on_render.run(&mut self.world);
 
                     let root = self.world.get_resource::<BellaInstance>().unwrap();
-        
-                    for (id, scene) in &root.scenes {
-                        self.main_scene.append(&scene, None);
+
+                    #[allow(clippy::for_kv_map)]
+                    for (_id, scene) in &root.scenes {
+                        self.main_scene.append(scene, None);
                     }
 
                     let surface_texture = surface
                         .surface
                         .get_current_texture()
                         .expect("failed to get surface texture");
-        
+
                     self.renderers[surface.dev_id]
                         .as_mut()
                         .unwrap()
@@ -294,8 +285,8 @@ pub mod prelude {
                     self.sch_on_update.run(&mut self.world);
 
                     render_state.window.request_redraw();
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }
@@ -304,7 +295,6 @@ pub mod prelude {
         /// Creates a new [`BellaApp`] with a window ready to go.
         /// `title` sets the title of the window, `width` and `height` set the resolution.
         pub fn new(title: &str, width: u32, height: u32) -> Self {
-
             let mut world = World::new();
 
             world.insert_resource(BellaInstance::default());
@@ -321,16 +311,16 @@ pub mod prelude {
             sch_on_pre_update.add_systems(recieve_inputs);
 
             Self {
-                world: world,
+                world,
 
                 sch_on_start: Schedule::default(),
-                sch_on_render: sch_on_render,
-                sch_on_pre_update: sch_on_pre_update,
+                sch_on_render,
+                sch_on_pre_update,
                 sch_on_update: Schedule::default(),
 
                 title: title.to_string(),
-                width: width,
-                height: height,
+                width,
+                height,
 
                 on_start: true,
                 is_resizing: false,
@@ -366,9 +356,7 @@ pub mod prelude {
         /// Runs your [`BellaApp`].
         pub fn run(&mut self) {
             let event_loop = EventLoop::new().unwrap();
-            event_loop
-                .run_app(self)
-                .expect("Couldn't run event loop");
+            event_loop.run_app(self).expect("Couldn't run event loop");
         }
     }
 }

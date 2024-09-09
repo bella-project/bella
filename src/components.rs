@@ -5,11 +5,8 @@ use bevy_ecs::prelude::*;
 use vello::Scene;
 
 use vello::peniko::{
-    kurbo::{
-        Affine, BezPath, Circle, Ellipse, Line, Point, Rect, RoundedRect, Shape, Stroke, Vec2,
-    },
-    BlendMode, Blob, Brush, BrushRef, Color, ColorStop, ColorStops, ColorStopsSource, Compose,
-    Extend, Fill, Font, Gradient, Image, Mix, StyleRef,
+    kurbo::{BezPath, Circle, Ellipse, Line, Point, RoundedRect, Shape, Stroke, Vec2},
+    Brush, Fill,
 };
 
 use crate::prelude::BellaInstance;
@@ -19,7 +16,7 @@ use crate::transforms::BellaTransform;
 /// Your scene in form of a reference. Used to communicate to [`BellaInstance`]'s `scenes`'s HashMap.
 #[derive(Component)]
 pub struct BellaScene {
-	// Contains the ID, which was probably assigned by [`new_bella_scene`].
+    // Contains the ID, which was probably assigned by [`new_bella_scene`].
     id: usize,
 }
 
@@ -27,7 +24,7 @@ pub struct BellaScene {
 /// This is used as a translation layer between Bella and [`vello`]'s draw commands.
 #[derive(Component)]
 pub struct BellaCommand {
-	/// Contains the ID, probably assigned by [`BellaScene`]'s draw functions.
+    /// Contains the ID, probably assigned by [`BellaScene`]'s draw functions.
     pub scene_id: usize,
     /// Contains the [`Stroke`] of your draw command. If it's [`None`], it'll not render a stroke.
     pub stroke: Option<Stroke>,
@@ -48,10 +45,9 @@ pub struct BellaCommandBundle {
     pub transform: BellaTransform,
 }
 
-
 /// The shape you want to be displayed. This is a translation layer between Bella and [`vello::kurbo`]'s shapes.
 pub enum BellaShape {
-	/// A Rounded Rectangle. The values you set (in order from left to right) are: `x`, `y`, `width`, `height` and `radius`. Can be translated to [`vello::kurbo::RoundedRect`].
+    /// A Rounded Rectangle. The values you set (in order from left to right) are: `x`, `y`, `width`, `height` and `radius`. Can be translated to [`vello::kurbo::RoundedRect`].
     RoundedRect(f64, f64, f64, f64, f64),
     /// A Circle. The values you set (in order from left to right) are: `center` and `radius`. Can be translated to [`vello::kurbo::Circle`].
     Circle(Point, f64),
@@ -62,7 +58,7 @@ pub enum BellaShape {
 }
 
 impl BellaShape {
-	/// Translates your shape into a [`vello::kurbo`] [`Shape`]. It returns a [`BezPath`] to ensure to the compiler that shapes internally contain the same size.
+    /// Translates your shape into a [`vello::kurbo`] [`Shape`]. It returns a [`BezPath`] to ensure to the compiler that shapes internally contain the same size.
     pub fn to_kurbo(&self) -> BezPath {
         match self {
             BellaShape::RoundedRect(x, y, width, height, radius) => {
@@ -91,15 +87,15 @@ pub fn new_bella_scene(mut root: ResMut<BellaInstance>) -> BellaScene {
 }
 
 impl BellaScene {
-	/// Creates a new stroke inside of the scene.
-	///
-	/// - `stroke` sets the [`Stroke`] & its properties.
-	/// - `brush` sets the [`Brush`] of the stroke. Can be a solid color, a linear gradient, etc.
-	/// - `shape` sets the [`Shape`] of the stroke. Can be a cirle, square, bezier path, etc.
-	/// - `transform` sets the stroke's [`BellaTransform`]. Used to move, rotate, scale and overall transform the shape.
-	///
-	/// This is a translation layer between Bella and [`vello`]'s stroke command.
-    pub fn stroke<'b>(
+    /// Creates a new stroke inside of the scene.
+    ///
+    /// - `stroke` sets the [`Stroke`] & its properties.
+    /// - `brush` sets the [`Brush`] of the stroke. Can be a solid color, a linear gradient, etc.
+    /// - `shape` sets the [`Shape`] of the stroke. Can be a cirle, square, bezier path, etc.
+    /// - `transform` sets the stroke's [`BellaTransform`]. Used to move, rotate, scale and overall transform the shape.
+    ///
+    /// This is a translation layer between Bella and [`vello`]'s stroke command.
+    pub fn stroke(
         &self,
         stroke: Stroke,
         brush: impl Into<Brush>,
@@ -112,21 +108,21 @@ impl BellaScene {
                 stroke: Some(stroke),
                 fill: None,
                 brush: brush.into(),
-                shape: shape,
+                shape,
             },
-            transform: transform,
+            transform,
         }
     }
 
     /// Creates a new fill inside of the scene.
-	///
-	/// - `fill` sets the [`Fill`] & its properties.
-	/// - `brush` sets the [`Brush`] of the fill. Can be a solid color, a linear gradient, etc.
-	/// - `shape` sets the [`Shape`] of the fill. Can be a cirle, square, bezier path, etc.
-	/// - `transform` sets the fill's [`BellaTransform`]. Used to move, rotate, scale and overall transform the shape.
-	///
-	/// This is a translation layer between Bella and [`vello`]'s fill command.
-    pub fn fill<'b>(
+    ///
+    /// - `fill` sets the [`Fill`] & its properties.
+    /// - `brush` sets the [`Brush`] of the fill. Can be a solid color, a linear gradient, etc.
+    /// - `shape` sets the [`Shape`] of the fill. Can be a cirle, square, bezier path, etc.
+    /// - `transform` sets the fill's [`BellaTransform`]. Used to move, rotate, scale and overall transform the shape.
+    ///
+    /// This is a translation layer between Bella and [`vello`]'s fill command.
+    pub fn fill(
         &self,
         fill: Fill,
         brush: impl Into<Brush>,
@@ -139,9 +135,9 @@ impl BellaScene {
                 stroke: None,
                 fill: Some(fill),
                 brush: brush.into(),
-                shape: shape,
+                shape,
             },
-            transform: transform,
+            transform,
         }
     }
 }
@@ -154,10 +150,10 @@ pub fn render(
     mut instance: ResMut<BellaInstance>,
 ) {
     for (b, t) in &mut bella_query {
-        let mut scene: &mut Scene = instance.scenes.get_mut(&b.scene_id).unwrap();
+        let scene: &mut Scene = instance.scenes.get_mut(&b.scene_id).unwrap();
 
         if let Some(stroke) = &b.stroke {
-            scene.stroke(&stroke, t.affine, &b.brush, None, &b.shape.to_kurbo());
+            scene.stroke(stroke, t.affine, &b.brush, None, &b.shape.to_kurbo());
         }
 
         if let Some(fill) = &b.fill {
