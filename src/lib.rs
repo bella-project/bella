@@ -45,7 +45,7 @@ pub mod prelude {
     pub use crate::{
         components::{new_bella_scene, render, BellaScene, BellaShape},
         input::{recieve_inputs, BellaInput},
-        time::{time_system, BellaTime, Virtual, Real},
+        time::{time_system, BellaTime, Real, Virtual},
         transforms::BellaTransform,
     };
 
@@ -107,7 +107,6 @@ pub mod prelude {
 
     impl BellaWorld {
         pub fn new() -> Self {
-
             let mut world = World::new();
 
             world.insert_resource(BellaInstance::default());
@@ -237,7 +236,6 @@ pub mod prelude {
 
                 // Resize the surface when the window is resized
                 WindowEvent::Resized(size) => {
-
                     if size.width == 0 && size.height == 0 {
                         return;
                     }
@@ -250,10 +248,9 @@ pub mod prelude {
                 }
 
                 WindowEvent::KeyboardInput { event, .. } => {
-
                     for w in &self.worlds {
                         let input = w.main.get_resource::<BellaInput>().unwrap();
-    
+
                         match event.state {
                             ElementState::Pressed => {
                                 input.set_key_down(event.physical_key.to_scancode().unwrap());
@@ -290,12 +287,11 @@ pub mod prelude {
                     self.main_scene.reset();
 
                     let surface_texture = surface
-                            .surface
-                            .get_current_texture()
-                            .expect("failed to get surface texture");
+                        .surface
+                        .get_current_texture()
+                        .expect("failed to get surface texture");
 
                     for w in &mut self.worlds {
-
                         if w.on_start {
                             w.sch_on_start.run(&mut w.main);
                             w.on_start = false;
@@ -306,12 +302,12 @@ pub mod prelude {
                         w.sch_on_render.run(&mut w.main);
 
                         let root = w.main.get_resource::<BellaInstance>().unwrap();
-    
+
                         #[allow(clippy::for_kv_map)]
                         for (_id, scene) in &root.scenes {
                             self.main_scene.append(scene, None);
                         }
-    
+
                         self.renderers[surface.dev_id]
                             .as_mut()
                             .unwrap()
@@ -329,9 +325,9 @@ pub mod prelude {
                                 },
                             )
                             .expect("failed to render to surface");
-    
+
                         w.sch_on_pre_update.run(&mut w.main);
-    
+
                         w.sch_on_update.run(&mut w.main);
 
                         w.sch_on_last.run(&mut w.main);
@@ -377,21 +373,33 @@ pub mod prelude {
 
         /// Adds a system that'll be executed on the first frame of your world.
         pub fn on_start<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
-            self.worlds.last_mut().unwrap().sch_on_start.add_systems(systems);
+            self.worlds
+                .last_mut()
+                .unwrap()
+                .sch_on_start
+                .add_systems(systems);
             self
         }
 
         /// Adds a system that'll be executed in the render loop.
         /// This is used for rendering the Vello Shapes, for example.
         pub fn on_render<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
-            self.worlds.last_mut().unwrap().sch_on_render.add_systems(systems);
+            self.worlds
+                .last_mut()
+                .unwrap()
+                .sch_on_render
+                .add_systems(systems);
             self
         }
 
         /// Adds a system that'll be executed every frame.
         /// This is where you usually run your game logic, like inputs, player controllers, etc.
         pub fn on_update<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
-            self.worlds.last_mut().unwrap().sch_on_update.add_systems(systems);
+            self.worlds
+                .last_mut()
+                .unwrap()
+                .sch_on_update
+                .add_systems(systems);
             self
         }
 

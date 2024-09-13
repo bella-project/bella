@@ -2,25 +2,24 @@
 
 use crate::prelude::*;
 
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 /// The Resource that manages everything related to time in a [`BellaApp`].
 #[derive(Resource, Debug, Copy, Clone)]
 pub struct BellaTime<T: Default = ()> {
-	context: T,
-	wrap_period: Duration,
+    context: T,
+    wrap_period: Duration,
     delta: Duration,
     delta_seconds: f64,
 }
 
 impl<T: Default> BellaTime<T> {
-
-	const DEFAULT_WRAP_PERIOD: Duration = Duration::from_secs(3600);
+    const DEFAULT_WRAP_PERIOD: Duration = Duration::from_secs(3600);
 
     /// Creates a new clock from a specific context, starting from zero.
     pub fn new_with(context: T) -> Self {
         Self {
-        	context,
+            context,
             ..Default::default()
         }
     }
@@ -41,17 +40,17 @@ impl<T: Default> BellaTime<T> {
     }
 
     pub fn as_generic(&self) -> BellaTime<()> {
-    	BellaTime {
-    		context: (),
-    		wrap_period: self.wrap_period,
-    		delta: self.delta,
-    		delta_seconds: self.delta_seconds,
-    	}
+        BellaTime {
+            context: (),
+            wrap_period: self.wrap_period,
+            delta: self.delta,
+            delta_seconds: self.delta_seconds,
+        }
     }
 
     pub fn advance_by(&mut self, delta: Duration) {
-    	self.delta = delta;
-    	self.delta_seconds = self.delta.as_secs_f64();
+        self.delta = delta;
+        self.delta_seconds = self.delta.as_secs_f64();
     }
 
     /// Gets the Delta Time in seconds.
@@ -60,23 +59,23 @@ impl<T: Default> BellaTime<T> {
     }
 }
 
-impl <T: Default> Default for BellaTime<T> {
+impl<T: Default> Default for BellaTime<T> {
     fn default() -> Self {
         Self {
-        	context: Default::default(),
-        	wrap_period: Self::DEFAULT_WRAP_PERIOD,
-        	delta: Duration::ZERO,
-        	delta_seconds: 0.0,
+            context: Default::default(),
+            wrap_period: Self::DEFAULT_WRAP_PERIOD,
+            delta: Duration::ZERO,
+            delta_seconds: 0.0,
         }
     }
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct Virtual {
-	max_delta: Duration,
-	paused: bool,
-	relative_speed: f64,
-	effective_speed: f64,
+    max_delta: Duration,
+    paused: bool,
+    relative_speed: f64,
+    effective_speed: f64,
 }
 
 impl Default for Virtual {
@@ -91,7 +90,7 @@ impl Default for Virtual {
 }
 
 impl BellaTime<Virtual> {
-	const DEFAULT_MAX_DELTA: Duration = Duration::from_millis(250);
+    const DEFAULT_MAX_DELTA: Duration = Duration::from_millis(250);
 
     fn advance_with_raw_delta(&mut self, raw_delta: Duration) {
         let max_delta = self.context().max_delta;
@@ -123,10 +122,10 @@ impl BellaTime<Virtual> {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Real {
-	#[allow(dead_code)]
-	startup: Instant,
-	first_update: Option<Instant>,
-	last_update: Option<Instant>,
+    #[allow(dead_code)]
+    startup: Instant,
+    first_update: Option<Instant>,
+    last_update: Option<Instant>,
 }
 
 impl Default for Real {
@@ -140,15 +139,14 @@ impl Default for Real {
 }
 
 impl BellaTime<Real> {
-
-	pub fn new(startup: Instant) -> Self {
+    pub fn new(startup: Instant) -> Self {
         Self::new_with(Real {
             startup,
             ..Default::default()
         })
     }
 
-	pub fn update_with_instant(&mut self, instant: Instant) {
+    pub fn update_with_instant(&mut self, instant: Instant) {
         let Some(last_update) = self.context().last_update else {
             let context = self.context_mut();
             context.first_update = Some(instant);
@@ -162,19 +160,19 @@ impl BellaTime<Real> {
 }
 
 pub fn time_system(
-	mut real_time: ResMut<BellaTime<Real>>,
+    mut real_time: ResMut<BellaTime<Real>>,
     mut virtual_time: ResMut<BellaTime<Virtual>>,
     mut time: ResMut<BellaTime>,
 ) {
-	let new_time = Instant::now();
+    let new_time = Instant::now();
 
-	real_time.update_with_instant(new_time);
+    real_time.update_with_instant(new_time);
 
-	update_time(&mut time, &mut virtual_time, &real_time);
+    update_time(&mut time, &mut virtual_time, &real_time);
 }
 
 pub fn update_time(current: &mut BellaTime, virt: &mut BellaTime<Virtual>, real: &BellaTime<Real>) {
-	let raw_delta = real.delta();
-	virt.advance_with_raw_delta(raw_delta);
-	*current = virt.as_generic();
+    let raw_delta = real.delta();
+    virt.advance_with_raw_delta(raw_delta);
+    *current = virt.as_generic();
 }
