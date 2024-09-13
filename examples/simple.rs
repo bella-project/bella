@@ -44,6 +44,7 @@ fn spawn_simple(mut commands: Commands, instance: ResMut<BellaInstance>) {
 
 pub fn main() {
     BellaApp::new("Bella: Vello Shapes", 800, 600)
+        .new_bella_world()
         .on_start(spawn_simple)
         .run();
 }

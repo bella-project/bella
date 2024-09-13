@@ -45,7 +45,7 @@ pub mod prelude {
     pub use crate::{
         components::{new_bella_scene, render, BellaScene, BellaShape},
         input::{recieve_inputs, BellaInput},
-        time::BellaTime,
+        time::{time_system, BellaTime, Virtual, Real},
         transforms::BellaTransform,
     };
 
@@ -92,20 +92,64 @@ pub mod prelude {
         Suspended(Option<Arc<Window>>),
     }
 
+    pub struct BellaWorld {
+        pub main: World,
+
+        pub sch_on_start: Schedule,
+        pub sch_on_first: Schedule,
+        pub sch_on_render: Schedule,
+        pub sch_on_pre_update: Schedule,
+        pub sch_on_update: Schedule,
+        pub sch_on_last: Schedule,
+
+        on_start: bool,
+    }
+
+    impl BellaWorld {
+        pub fn new() -> Self {
+
+            let mut world = World::new();
+
+            world.insert_resource(BellaInstance::default());
+            world.insert_resource(BellaTime::new_with(()));
+            world.insert_resource(BellaTime::new_with(Virtual::default()));
+            world.insert_resource(BellaTime::new_with(Real::default()));
+            world.insert_resource(BellaInput::default());
+
+            let mut sch_on_first = Schedule::default();
+
+            sch_on_first.add_systems(time_system);
+
+            let mut sch_on_render = Schedule::default();
+
+            sch_on_render.add_systems(bella_instance_reset);
+            sch_on_render.add_systems(render.after(bella_instance_reset));
+
+            let mut sch_on_pre_update = Schedule::default();
+
+            sch_on_pre_update.add_systems(recieve_inputs);
+
+            Self {
+                main: world,
+                sch_on_start: Schedule::default(),
+                sch_on_first,
+                sch_on_render,
+                sch_on_pre_update,
+                sch_on_update: Schedule::default(),
+                sch_on_last: Schedule::default(),
+                on_start: true,
+            }
+        }
+    }
+
     /// The root of your Bella program.
     pub struct BellaApp<'a> {
-        world: World,
-
-        sch_on_start: Schedule,
-        sch_on_render: Schedule,
-        sch_on_pre_update: Schedule,
-        sch_on_update: Schedule,
+        worlds: Vec<BellaWorld>,
 
         title: String,
         width: u32,
         height: u32,
 
-        on_start: bool,
         new_resize: bool,
         is_resizing: bool,
 
@@ -125,9 +169,7 @@ pub mod prelude {
         pub scenes: HashMap<usize, Scene>,
     }
 
-    fn bella_instance_reset(mut root: ResMut<BellaInstance>, mut time: ResMut<BellaTime>) {
-        time.start_delta();
-
+    fn bella_instance_reset(mut root: ResMut<BellaInstance>) {
         #[allow(clippy::for_kv_map)]
         for (_id, scene) in &mut root.scenes {
             scene.reset();
@@ -195,6 +237,11 @@ pub mod prelude {
 
                 // Resize the surface when the window is resized
                 WindowEvent::Resized(size) => {
+
+                    if size.width == 0 && size.height == 0 {
+                        return;
+                    }
+
                     self.width = size.width;
                     self.height = size.height;
 
@@ -203,14 +250,17 @@ pub mod prelude {
                 }
 
                 WindowEvent::KeyboardInput { event, .. } => {
-                    let input = self.world.get_resource::<BellaInput>().unwrap();
 
-                    match event.state {
-                        ElementState::Pressed => {
-                            input.set_key_down(event.physical_key.to_scancode().unwrap());
-                        }
-                        ElementState::Released => {
-                            input.set_key_up(event.physical_key.to_scancode().unwrap());
+                    for w in &self.worlds {
+                        let input = w.main.get_resource::<BellaInput>().unwrap();
+    
+                        match event.state {
+                            ElementState::Pressed => {
+                                input.set_key_down(event.physical_key.to_scancode().unwrap());
+                            }
+                            ElementState::Released => {
+                                input.set_key_up(event.physical_key.to_scancode().unwrap());
+                            }
                         }
                     }
                 }
@@ -221,11 +271,6 @@ pub mod prelude {
                         render_state.window.request_redraw();
                         self.is_resizing = false;
                         return;
-                    }
-
-                    if self.on_start {
-                        self.sch_on_start.run(&mut self.world);
-                        self.on_start = false;
                     }
 
                     // Get the RenderSurface (surface + config)
@@ -244,45 +289,57 @@ pub mod prelude {
 
                     self.main_scene.reset();
 
-                    self.sch_on_render.run(&mut self.world);
-
-                    let root = self.world.get_resource::<BellaInstance>().unwrap();
-
-                    #[allow(clippy::for_kv_map)]
-                    for (_id, scene) in &root.scenes {
-                        self.main_scene.append(scene, None);
-                    }
-
                     let surface_texture = surface
-                        .surface
-                        .get_current_texture()
-                        .expect("failed to get surface texture");
+                            .surface
+                            .get_current_texture()
+                            .expect("failed to get surface texture");
 
-                    self.renderers[surface.dev_id]
-                        .as_mut()
-                        .unwrap()
-                        .render_to_surface(
-                            &device_handle.device,
-                            &device_handle.queue,
-                            &self.main_scene,
-                            &surface_texture,
-                            &vello::RenderParams {
-                                base_color: Color::BLACK, // Background color
-                                width,
-                                height,
-                                antialiasing_method: AaConfig::Msaa16,
-                                debug: DebugLayers::none(),
-                            },
-                        )
-                        .expect("failed to render to surface");
+                    for w in &mut self.worlds {
+
+                        if w.on_start {
+                            w.sch_on_start.run(&mut w.main);
+                            w.on_start = false;
+                        }
+
+                        w.sch_on_first.run(&mut w.main);
+
+                        w.sch_on_render.run(&mut w.main);
+
+                        let root = w.main.get_resource::<BellaInstance>().unwrap();
+    
+                        #[allow(clippy::for_kv_map)]
+                        for (_id, scene) in &root.scenes {
+                            self.main_scene.append(scene, None);
+                        }
+    
+                        self.renderers[surface.dev_id]
+                            .as_mut()
+                            .unwrap()
+                            .render_to_surface(
+                                &device_handle.device,
+                                &device_handle.queue,
+                                &self.main_scene,
+                                &surface_texture,
+                                &vello::RenderParams {
+                                    base_color: Color::BLACK, // Background color
+                                    width,
+                                    height,
+                                    antialiasing_method: AaConfig::Msaa16,
+                                    debug: DebugLayers::none(),
+                                },
+                            )
+                            .expect("failed to render to surface");
+    
+                        w.sch_on_pre_update.run(&mut w.main);
+    
+                        w.sch_on_update.run(&mut w.main);
+
+                        w.sch_on_last.run(&mut w.main);
+                    }
 
                     surface_texture.present();
 
                     device_handle.device.poll(wgpu::Maintain::Poll);
-
-                    self.sch_on_pre_update.run(&mut self.world);
-
-                    self.sch_on_update.run(&mut self.world);
 
                     render_state.window.request_redraw();
                 }
@@ -295,34 +352,13 @@ pub mod prelude {
         /// Creates a new [`BellaApp`] with a window ready to go.
         /// `title` sets the title of the window, `width` and `height` set the resolution.
         pub fn new(title: &str, width: u32, height: u32) -> Self {
-            let mut world = World::new();
-
-            world.insert_resource(BellaInstance::default());
-            world.insert_resource(BellaTime::new());
-            world.insert_resource(BellaInput::default());
-
-            let mut sch_on_render = Schedule::default();
-
-            sch_on_render.add_systems(bella_instance_reset);
-            sch_on_render.add_systems(render.after(bella_instance_reset));
-
-            let mut sch_on_pre_update = Schedule::default();
-
-            sch_on_pre_update.add_systems(recieve_inputs);
-
             Self {
-                world,
-
-                sch_on_start: Schedule::default(),
-                sch_on_render,
-                sch_on_pre_update,
-                sch_on_update: Schedule::default(),
+                worlds: vec![],
 
                 title: title.to_string(),
                 width,
                 height,
 
-                on_start: true,
                 is_resizing: false,
                 new_resize: false,
 
@@ -333,23 +369,29 @@ pub mod prelude {
             }
         }
 
-        /// Adds a system that'll be executed on the first frame of your program.
+        /// Creates a new world.
+        pub fn new_bella_world(&mut self) -> &mut Self {
+            self.worlds.push(BellaWorld::new());
+            self
+        }
+
+        /// Adds a system that'll be executed on the first frame of your world.
         pub fn on_start<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
-            self.sch_on_start.add_systems(systems);
+            self.worlds.last_mut().unwrap().sch_on_start.add_systems(systems);
             self
         }
 
         /// Adds a system that'll be executed in the render loop.
         /// This is used for rendering the Vello Shapes, for example.
         pub fn on_render<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
-            self.sch_on_render.add_systems(systems);
+            self.worlds.last_mut().unwrap().sch_on_render.add_systems(systems);
             self
         }
 
         /// Adds a system that'll be executed every frame.
         /// This is where you usually run your game logic, like inputs, player controllers, etc.
         pub fn on_update<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
-            self.sch_on_update.add_systems(systems);
+            self.worlds.last_mut().unwrap().sch_on_update.add_systems(systems);
             self
         }
 

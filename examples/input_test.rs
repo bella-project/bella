@@ -1,11 +1,11 @@
 use bella::prelude::*;
 use kurbo::Vec2;
 
-fn hello(mut commands: Commands, mut instance: ResMut<BellaInstance>) {
+fn hello(mut commands: Commands, instance: ResMut<BellaInstance>) {
     let scene = new_bella_scene(instance);
 
-    for x in 0..100 {
-        for y in 0..50 {
+    for x in 0..5 {
+        for y in 0..5 {
             commands.spawn(scene.stroke(
                 kurbo::Stroke::new(6.0),
                 peniko::Color::RED,
@@ -42,6 +42,7 @@ pub fn update(
 
 pub fn main() {
     BellaApp::new("Bella: Input Test", 1280, 720)
+        .new_bella_world()
         .on_start(hello)
         .on_update(update)
         .run();

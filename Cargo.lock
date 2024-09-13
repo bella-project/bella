@@ -2740,19 +2740,3 @@ dependencies = [
  "quote",
  "syn 2.0.75",
 ]
-
-[[patch.unused]]
-name = "bevy"
-version = "0.15.0-dev"
-
-[[patch.unused]]
-name = "bevy_vello"
-version = "0.5.1"
-
-[[patch.unused]]
-name = "vello"
-version = "0.2.0"
-
-[[patch.unused]]
-name = "vello_encoding"
-version = "0.2.0"
