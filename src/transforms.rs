@@ -6,11 +6,11 @@ use vello::peniko::kurbo::{Affine, Point, Vec2};
 
 /// Describes the position, rotation, scale and any kind of transformation of an entity. This is a translation layer between Bella and [`vello::kurbo`]'s [`Affine`].
 #[derive(Component, Default)]
-pub struct BellaTransform {
+pub struct Transform {
     pub affine: Affine,
 }
 
-impl BellaTransform {
+impl Transform {
     // Default transform.
     pub const IDENTITY: Self = Self {
         affine: Affine::IDENTITY,

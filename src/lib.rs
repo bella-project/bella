@@ -4,7 +4,6 @@
 //!
 //! It combines the power of Bevy's ECS with the rendering and compute shading of Vello. Designed to be light and performant as possible at runtime.
 
-pub mod components;
 pub mod input;
 pub mod time;
 pub mod transforms;
@@ -30,7 +29,7 @@ pub mod prelude {
 
     use vello::peniko::Color;
     use vello::util::{RenderContext, RenderSurface};
-    use vello::{AaConfig, DebugLayers, Renderer, RendererOptions, Scene};
+    use vello::{AaConfig, Renderer, RendererOptions, Scene};
 
     use vello::wgpu;
 
@@ -43,10 +42,9 @@ pub mod prelude {
 
     #[doc(hidden)]
     pub use crate::{
-        components::{new_bella_scene, render, BellaScene, BellaShape},
-        input::{recieve_inputs, BellaInput},
-        time::{time_system, BellaTime, Real, Virtual},
-        transforms::BellaTransform,
+        input::{recieve_inputs, Input},
+        time::{time_system, Time, Real, Virtual},
+        transforms::Transform,
     };
 
     #[doc(hidden)]
@@ -97,7 +95,7 @@ pub mod prelude {
 
         pub sch_on_start: Schedule,
         pub sch_on_first: Schedule,
-        pub sch_on_render: Schedule,
+        pub sch_on_draw: Schedule,
         pub sch_on_pre_update: Schedule,
         pub sch_on_update: Schedule,
         pub sch_on_last: Schedule,
@@ -109,21 +107,18 @@ pub mod prelude {
         pub fn new() -> Self {
             let mut world = World::new();
 
-            world.insert_resource(BellaInstance::default());
-            world.insert_resource(BellaTime::new_with(()));
-            world.insert_resource(BellaTime::new_with(Virtual::default()));
-            world.insert_resource(BellaTime::new_with(Real::default()));
-            world.insert_resource(BellaInput::default());
+            world.insert_resource(Instance::default());
+            world.insert_resource(Time::new_with(()));
+            world.insert_resource(Time::new_with(Virtual::default()));
+            world.insert_resource(Time::new_with(Real::default()));
+            world.insert_resource(Input::default());
 
             let mut sch_on_first = Schedule::default();
 
             sch_on_first.add_systems(time_system);
+            sch_on_first.add_systems(bella_instance_reset);
 
-            let mut sch_on_render = Schedule::default();
-
-            sch_on_render.add_systems(bella_instance_reset);
-            sch_on_render.add_systems(render.after(bella_instance_reset));
-
+            let mut sch_on_draw = Schedule::default();
             let mut sch_on_pre_update = Schedule::default();
 
             sch_on_pre_update.add_systems(recieve_inputs);
@@ -132,7 +127,7 @@ pub mod prelude {
                 main: world,
                 sch_on_start: Schedule::default(),
                 sch_on_first,
-                sch_on_render,
+                sch_on_draw,
                 sch_on_pre_update,
                 sch_on_update: Schedule::default(),
                 sch_on_last: Schedule::default(),
@@ -142,7 +137,7 @@ pub mod prelude {
     }
 
     /// The root of your Bella program.
-    pub struct BellaApp<'a> {
+    pub struct App<'a> {
         worlds: Vec<BellaWorld>,
 
         title: String,
@@ -163,19 +158,39 @@ pub mod prelude {
     /// - `max_scene_id` keeps track of the last scene ID. This is used as a counter which increases each time you call [`new_bella_scene`].
     /// - `scenes` is a [`HashMap`] that stores all of the Scenes internally, all of them containing the unique IDs that have been assigned by [`new_bella_scene`] via `max_scene_id`.
     #[derive(Resource, Default)]
-    pub struct BellaInstance {
+    pub struct Instance {
         pub max_scene_id: usize,
         pub scenes: HashMap<usize, Scene>,
+        pub scene_names: HashMap<String, usize>,
     }
 
-    fn bella_instance_reset(mut root: ResMut<BellaInstance>) {
+    impl Instance {
+        pub fn new_scene(&mut self, name: &str) -> Option<&mut Scene> {
+            self.max_scene_id += 1;
+            self.scenes.insert(self.max_scene_id, Scene::new());
+            self.scene_names.insert(name.to_string(), self.max_scene_id);
+
+            self.scenes.get_mut(&self.max_scene_id)
+        }
+
+        pub fn get_scene(&mut self, name: &str) -> Option<&mut Scene> {
+            let ptr = self.scene_names.get(name);
+
+            match ptr {
+                Some(p) => self.scenes.get_mut(p),
+                None => None,
+            }
+        }
+    }
+
+    fn bella_instance_reset(mut root: ResMut<Instance>) {
         #[allow(clippy::for_kv_map)]
         for (_id, scene) in &mut root.scenes {
             scene.reset();
         }
     }
 
-    impl<'a> ApplicationHandler for BellaApp<'a> {
+    impl<'a> ApplicationHandler for App<'a> {
         fn resumed(&mut self, event_loop: &ActiveEventLoop) {
             let RenderState::Suspended(cached_window) = &mut self.state else {
                 return;
@@ -249,7 +264,7 @@ pub mod prelude {
 
                 WindowEvent::KeyboardInput { event, .. } => {
                     for w in &self.worlds {
-                        let input = w.main.get_resource::<BellaInput>().unwrap();
+                        let input = w.main.get_resource::<Input>().unwrap();
 
                         match event.state {
                             ElementState::Pressed => {
@@ -291,6 +306,8 @@ pub mod prelude {
                         .get_current_texture()
                         .expect("failed to get surface texture");
 
+                    let mut first_draw_call: bool = true;
+
                     for w in &mut self.worlds {
                         if w.on_start {
                             w.sch_on_start.run(&mut w.main);
@@ -299,9 +316,9 @@ pub mod prelude {
 
                         w.sch_on_first.run(&mut w.main);
 
-                        w.sch_on_render.run(&mut w.main);
+                        w.sch_on_draw.run(&mut w.main);
 
-                        let root = w.main.get_resource::<BellaInstance>().unwrap();
+                        let root = w.main.get_resource::<Instance>().unwrap();
 
                         #[allow(clippy::for_kv_map)]
                         for (_id, scene) in &root.scenes {
@@ -317,11 +334,15 @@ pub mod prelude {
                                 &self.main_scene,
                                 &surface_texture,
                                 &vello::RenderParams {
-                                    base_color: Color::BLACK, // Background color
+                                    base_color: if first_draw_call {
+                                        first_draw_call = false;
+                                        Color::BLACK
+                                    } else {
+                                        Color::TRANSPARENT
+                                    }, // Background color
                                     width,
                                     height,
                                     antialiasing_method: AaConfig::Msaa16,
-                                    debug: DebugLayers::none(),
                                 },
                             )
                             .expect("failed to render to surface");
@@ -344,8 +365,8 @@ pub mod prelude {
         }
     }
 
-    impl BellaApp<'_> {
-        /// Creates a new [`BellaApp`] with a window ready to go.
+    impl App<'_> {
+        /// Creates a new [`App`] with a window ready to go.
         /// `title` sets the title of the window, `width` and `height` set the resolution.
         pub fn new(title: &str, width: u32, height: u32) -> Self {
             Self {
@@ -366,7 +387,7 @@ pub mod prelude {
         }
 
         /// Creates a new world.
-        pub fn new_bella_world(&mut self) -> &mut Self {
+        pub fn new_world(&mut self) -> &mut Self {
             self.worlds.push(BellaWorld::new());
             self
         }
@@ -383,11 +404,11 @@ pub mod prelude {
 
         /// Adds a system that'll be executed in the render loop.
         /// This is used for rendering the Vello Shapes, for example.
-        pub fn on_render<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
+        pub fn on_draw<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
             self.worlds
                 .last_mut()
                 .unwrap()
-                .sch_on_render
+                .sch_on_draw
                 .add_systems(systems);
             self
         }
@@ -403,7 +424,7 @@ pub mod prelude {
             self
         }
 
-        /// Runs your [`BellaApp`].
+        /// Runs your [`App`].
         pub fn run(&mut self) {
             let event_loop = EventLoop::new().unwrap();
             event_loop.run_app(self).expect("Couldn't run event loop");

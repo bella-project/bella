@@ -18,7 +18,7 @@ use crossbeam_queue::SegQueue;
 /// - `key_up` is a vector that contains all of the "key up"'s derected by [`recieve_inputs`].
 /// - `key_press` is a vector that contains all of the keys currently being pressed, derected by [`recieve_inputs`].
 #[derive(Resource, Default)]
-pub struct BellaInput {
+pub struct Input {
     key_down_queue: SegQueue<u32>,
     key_up_queue: SegQueue<u32>,
 
@@ -27,8 +27,8 @@ pub struct BellaInput {
     key_press: Vec<u32>,
 }
 
-/// The logic that absorbs all of the information coming from [`BellaInput`]'s queues, so it can be used later for your app's systems.
-pub fn recieve_inputs(mut input: ResMut<BellaInput>) {
+/// The logic that absorbs all of the information coming from [`Input`]'s queues, so it can be used later for your app's systems.
+pub fn recieve_inputs(mut input: ResMut<Input>) {
     input.key_down.clear();
     input.key_up.clear();
 
@@ -63,7 +63,7 @@ fn get_keycode_from_physical_key(pk: PhysicalKey) -> KeyCode {
     }
 }
 
-impl BellaInput {
+impl Input {
     /// Sends a key down to the `key_down_queue`. Currently used in [`BellaApp::window_main`].
     pub fn set_key_down(&self, key: u32) {
         self.key_down_queue.push(key);

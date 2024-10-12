@@ -8,5 +8,5 @@ edition = "2021"
 bevy_ecs = "0.14.1"
 crossbeam-queue = "0.3.11"
 pollster = "0.3.0"
-vello = { version = "0.2.0", git = "https://github.com/linebender/vello/" }
+vello = { version = "0.3.0", git = "https://github.com/linebender/vello/" }
 winit = "0.30.5"
