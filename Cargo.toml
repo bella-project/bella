@@ -9,4 +9,5 @@ bevy_ecs = "0.14.1"
 crossbeam-queue = "0.3.11"
 pollster = "0.3.0"
 vello = { version = "0.3.0", git = "https://github.com/linebender/vello/" }
+interpoli = { git = "https://github.com/bella-project/interpoli/", branch = "timelines" }
 winit = "0.30.5"

@@ -8,6 +8,8 @@ pub mod input;
 pub mod time;
 pub mod transforms;
 
+pub extern crate interpoli;
+
 /// This is the entry point of the engine, where it exports all of the tools you and Bella need and manages the root of your program.
 pub mod prelude {
 
@@ -37,13 +39,16 @@ pub mod prelude {
 
     use std::collections::HashMap;
 
+    pub use interpoli::timeline;
+    pub use interpoli::{tcode_full, tcode_hms, tcode_hmsf, tcode_hmsf_framerate};
+
     #[doc(hidden)]
     pub use vello::{kurbo, peniko};
 
     #[doc(hidden)]
     pub use crate::{
         input::{recieve_inputs, Input},
-        time::{time_system, Time, Real, Virtual},
+        time::{time_system, Real, Time, Virtual},
         transforms::Transform,
     };
 
@@ -103,6 +108,12 @@ pub mod prelude {
         on_start: bool,
     }
 
+    impl Default for BellaWorld {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl BellaWorld {
         pub fn new() -> Self {
             let mut world = World::new();
@@ -118,7 +129,7 @@ pub mod prelude {
             sch_on_first.add_systems(time_system);
             sch_on_first.add_systems(bella_instance_reset);
 
-            let mut sch_on_draw = Schedule::default();
+            let sch_on_draw = Schedule::default();
             let mut sch_on_pre_update = Schedule::default();
 
             sch_on_pre_update.add_systems(recieve_inputs);

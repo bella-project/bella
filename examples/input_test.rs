@@ -9,7 +9,10 @@ fn start(mut commands: Commands, mut instance: ResMut<Instance>) {
 
     for x in 0..5 {
         for y in 0..5 {
-            commands.spawn((MovingObject, Transform::from_xy(x as f64 * 50.0, y as f64 * 50.0)));
+            commands.spawn((
+                MovingObject,
+                Transform::from_xy(x as f64 * 50.0, y as f64 * 50.0),
+            ));
         }
     }
 }
@@ -28,11 +31,7 @@ fn draw(mut moving_query: Query<(&MovingObject, &mut Transform)>, mut instance: 
     }
 }
 
-pub fn update(
-    time: Res<Time>,
-    input: Res<Input>,
-    mut transform_query: Query<&mut Transform>,
-) {
+pub fn update(time: Res<Time>, input: Res<Input>, mut transform_query: Query<&mut Transform>) {
     for mut t in &mut transform_query {
         if input.is_key_pressed(KeyCode::KeyW) {
             t.add_translation(Vec2::new(0.0, -100.0 * time.delta_seconds()));

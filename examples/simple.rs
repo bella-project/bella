@@ -1,5 +1,5 @@
 use bella::prelude::*;
-use kurbo::{Stroke, RoundedRect, Ellipse, Affine, Circle, Line};
+use kurbo::{Affine, Circle, Ellipse, Line, RoundedRect, Stroke};
 use peniko::{Color, Fill};
 
 fn spawn_scene(mut instance: ResMut<Instance>) {
