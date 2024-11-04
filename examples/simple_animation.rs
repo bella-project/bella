@@ -1,6 +1,7 @@
 use bella::prelude::*;
 use interpoli::{Framerate, Keyframe, Sequence, Timecode, Timeline};
-use kurbo::{Affine, Vec2};
+use kurbo::{Affine, Stroke, Vec2};
+use peniko::Fill;
 
 #[derive(Component)]
 struct AnimatedObject {
@@ -101,12 +102,12 @@ fn draw(query: Query<(&Transform, &AnimatedObject)>, mut instance: ResMut<Instan
     let scene = instance.get_scene("scene1").unwrap();
 
     for (t, a) in &query {
-        scene.stroke(
-            &kurbo::Stroke::new(6.0),
+        scene.stroke_rounded_rect(
+            Stroke::new(6.0),
             t.affine,
             a.color,
-            None,
-            &kurbo::RoundedRect::new(0.0, 0.0, 50.0, 50.0, 20.0),
+            Vec2::new(50.0, 50.0),
+            20.0,
         );
     }
 }

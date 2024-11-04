@@ -4,7 +4,10 @@
 //!
 //! It combines the power of Bevy's ECS with the rendering and compute shading of Vello. Designed to be light and performant as possible at runtime.
 
+pub mod assets;
+pub mod basics;
 pub mod input;
+pub mod instance;
 pub mod time;
 pub mod transforms;
 
@@ -37,8 +40,6 @@ pub mod prelude {
 
     use pollster;
 
-    use std::collections::HashMap;
-
     pub use interpoli::timeline;
     pub use interpoli::{tcode_full, tcode_hms, tcode_hmsf, tcode_hmsf_framerate};
 
@@ -47,7 +48,10 @@ pub mod prelude {
 
     #[doc(hidden)]
     pub use crate::{
-        input::{recieve_inputs, Input},
+        assets::{AssetServer, Format, ToFontRef},
+        basics::SceneBasics,
+        input::{recieve_inputs, Input, MouseButton},
+        instance::{bella_instance_reset, Instance},
         time::{time_system, Real, Time, Virtual},
         transforms::Transform,
     };
@@ -164,43 +168,6 @@ pub mod prelude {
         main_scene: Scene,
     }
 
-    /// The root of all of your `BellaScene`'s, which are stored and sent to the CPU/GPU.
-    ///
-    /// - `max_scene_id` keeps track of the last scene ID. This is used as a counter which increases each time you call [`new_bella_scene`].
-    /// - `scenes` is a [`HashMap`] that stores all of the Scenes internally, all of them containing the unique IDs that have been assigned by [`new_bella_scene`] via `max_scene_id`.
-    #[derive(Resource, Default)]
-    pub struct Instance {
-        pub max_scene_id: usize,
-        pub scenes: HashMap<usize, Scene>,
-        pub scene_names: HashMap<String, usize>,
-    }
-
-    impl Instance {
-        pub fn new_scene(&mut self, name: &str) -> Option<&mut Scene> {
-            self.max_scene_id += 1;
-            self.scenes.insert(self.max_scene_id, Scene::new());
-            self.scene_names.insert(name.to_string(), self.max_scene_id);
-
-            self.scenes.get_mut(&self.max_scene_id)
-        }
-
-        pub fn get_scene(&mut self, name: &str) -> Option<&mut Scene> {
-            let ptr = self.scene_names.get(name);
-
-            match ptr {
-                Some(p) => self.scenes.get_mut(p),
-                None => None,
-            }
-        }
-    }
-
-    fn bella_instance_reset(mut root: ResMut<Instance>) {
-        #[allow(clippy::for_kv_map)]
-        for (_id, scene) in &mut root.scenes {
-            scene.reset();
-        }
-    }
-
     impl<'a> ApplicationHandler for App<'a> {
         fn resumed(&mut self, event_loop: &ActiveEventLoop) {
             let RenderState::Suspended(cached_window) = &mut self.state else {
@@ -288,6 +255,29 @@ pub mod prelude {
                     }
                 }
 
+                WindowEvent::CursorMoved { position, .. } => {
+                    for w in &self.worlds {
+                        let input = w.main.get_resource::<Input>().unwrap();
+
+                        input.set_mouse_pos(position.x, position.y);
+                    }
+                }
+
+                WindowEvent::MouseInput { state, button, .. } => {
+                    for w in &self.worlds {
+                        let input = w.main.get_resource::<Input>().unwrap();
+
+                        match state {
+                            ElementState::Pressed => {
+                                input.set_mouse_button_down(button);
+                            }
+                            ElementState::Released => {
+                                input.set_mouse_button_up(button);
+                            }
+                        }
+                    }
+                }
+
                 // This is where all the rendering happens
                 WindowEvent::RedrawRequested => {
                     if self.is_resizing {
@@ -329,7 +319,9 @@ pub mod prelude {
 
                         w.sch_on_draw.run(&mut w.main);
 
-                        let root = w.main.get_resource::<Instance>().unwrap();
+                        let mut root = w.main.get_resource_mut::<Instance>().unwrap();
+
+                        root.set_resolution(self.width, self.height);
 
                         #[allow(clippy::for_kv_map)]
                         for (_id, scene) in &root.scenes {
